@@ -49,8 +49,10 @@ public class IpPacket extends Packet {
             default: protocolName = "PROTOCOL_" + protocol; break;
         }
 
-        return String.format("IP | %s -> %s | - | %s | %dB | NORMAL",
-                sourceAddress.getHostAddress(), destinationAddress.getHostAddress(),
-                protocolName, length);
+        String srcIp = sourceAddress != null ? sourceAddress.getHostAddress() : "N/A";
+        String dstIp = destinationAddress != null ? destinationAddress.getHostAddress() : "N/A";
+
+        return String.format("IP | SRC: %-15s DST: %-15s PROTO: %-8s SIZE: %d bytes",
+                srcIp, dstIp, protocolName, length);
     }
 }

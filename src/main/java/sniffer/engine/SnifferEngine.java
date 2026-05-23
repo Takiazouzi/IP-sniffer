@@ -123,6 +123,72 @@ public class SnifferEngine {
         Logger.info("Captured " + totalPackets + " packets, " + totalBytes + " bytes.");
     }
 
+    /**
+     * Process packets from a PCAP file.
+     *
+     * @param pcapFilePath path to the PCAP file
+     * @throws Exception if file cannot be opened or read
+     */
+    public void processPcapFile(String pcapFilePath) throws Exception {
+        Logger.info("Opening PCAP file: " + pcapFilePath);
+        
+        try {
+            // Open the PCAP file for offline reading
+            handle = Pcaps.openOffline(pcapFilePath);
+            Logger.info("Successfully opened PCAP file for offline analysis");
+        } catch (Exception e) {
+            Logger.error("Failed to open PCAP file: " + e.getMessage());
+            throw new Exception("Cannot open PCAP file: " + e.getMessage(), e);
+        }
+
+        // Set filter if specified
+        try {
+            if (filterExpression != null && !filterExpression.isEmpty()) {
+                handle.setFilter(filterExpression, BpfProgram.BpfCompileMode.OPTIMIZE);
+                Logger.info("Filter applied: " + filterExpression);
+            }
+        } catch (Exception e) {
+            Logger.info("Could not set filter, reading all packets from file");
+        }
+
+        running = true;
+        Logger.info("Starting packet analysis from PCAP file...\n");
+        
+        capturePacketsFromFile();
+    }
+
+    private void capturePacketsFromFile() {
+        try {
+            Packet packet;
+            while ((packet = handle.getNextPacket()) != null && running) {
+                // Check if we've reached the packet limit
+                if (packetLimit > 0 && stats.getTotalPackets() >= packetLimit) {
+                    Logger.info("Packet limit of " + packetLimit + " reached!");
+                    running = false;
+                    break;
+                }
+
+                processPacket(packet);
+            }
+            
+            // Print final statistics
+            Logger.info("\n" + "=".repeat(80));
+            printFinalStatistics();
+            Logger.info("=".repeat(80));
+            
+        } catch (Exception e) {
+            Logger.error("Error during packet file analysis: " + e.getMessage());
+        } finally {
+            stop();
+        }
+    }
+
+    private void printFinalStatistics() {
+        Logger.info("Analysis Complete!");
+        Logger.info("Total packets processed: " + stats.getTotalPackets());
+        Logger.info("Total bytes analyzed: " + stats.getTotalBytes());
+    }
+
     private void capturePackets() {
         long lastStatusTime = System.currentTimeMillis();
         int packetCheckCount = 0;
@@ -179,14 +245,15 @@ public class SnifferEngine {
             // Record statistics
             stats.recordPacket(parsedPacket);
 
+            // Display packet information with nice formatting
+            long packetNum = stats.getTotalPackets();
+            System.out.println(String.format("[Packet #%-5d] %s", packetNum, parsedPacket.toString()));
+
             // Analyze for security issues
             String analysisResult = analyzer.analyze(parsedPacket);
             if (analysisResult != null) {
-                Logger.warn("Security alert: " + analysisResult);
+                System.out.println(String.format("               └─ ⚠️  Security Alert: %s", analysisResult));
             }
-
-            // Log every packet
-            Logger.info("[Packet #" + stats.getTotalPackets() + "] " + parsedPacket.toString());
 
         } catch (Exception e) {
             Logger.error("Error processing packet: " + e.getMessage());

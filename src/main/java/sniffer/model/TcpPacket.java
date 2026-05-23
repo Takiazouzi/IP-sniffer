@@ -63,15 +63,20 @@ public class TcpPacket extends IpPacket {
         if (flags.endsWith(",")) flags = flags.substring(0, flags.length() - 1);
         if (flags.isEmpty()) flags = "NONE";
 
-        String protocol = "UNKNOWN";
-        if (destinationPort == 80) protocol = "HTTP";
-        else if (destinationPort == 443) protocol = "HTTPS";
-        else if (sourcePort == 80 || destinationPort == 80) protocol = "HTTP";
-        else if (sourcePort == 443 || destinationPort == 443) protocol = "HTTPS";
+        String appProtocol = "TCP";
+        if (getDestinationPort() == 80 || getSourcePort() == 80) appProtocol = "HTTP";
+        else if (getDestinationPort() == 443 || getSourcePort() == 443) appProtocol = "HTTPS";
+        else if (getDestinationPort() == 22 || getSourcePort() == 22) appProtocol = "SSH";
+        else if (getDestinationPort() == 23 || getSourcePort() == 23) appProtocol = "TELNET";
+        else if (getDestinationPort() == 21 || getSourcePort() == 21) appProtocol = "FTP";
+        else if (getDestinationPort() == 25 || getSourcePort() == 25) appProtocol = "SMTP";
 
-        return String.format("TCP | %s:%d -> %s:%d | %s | %s | %dB | NORMAL",
-                getSourceAddress().getHostAddress(), Math.abs(sourcePort),
-                getDestinationAddress().getHostAddress(), Math.abs(destinationPort),
-                flags, protocol, getLength());
+        String srcIp = getSourceAddress() != null ? getSourceAddress().getHostAddress() : "N/A";
+        String dstIp = getDestinationAddress() != null ? getDestinationAddress().getHostAddress() : "N/A";
+
+        return String.format("TCP | SRC: %-15s:%-5d DST: %-15s:%-5d FLAGS: %-12s APP: %-7s SIZE: %d bytes",
+                srcIp, getSourcePort(),
+                dstIp, getDestinationPort(),
+                flags, appProtocol, getLength());
     }
 }
