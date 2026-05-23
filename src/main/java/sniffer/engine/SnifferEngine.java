@@ -6,6 +6,9 @@ import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.core.Pcaps;
 import org.pcap4j.packet.Packet;
 import sniffer.parser.DefaultPacketParser;
+import sniffer.analyzer.BasicSecurityAnalyzer;
+import sniffer.filter.DefaultPacketFilter;
+import sniffer.stats.TrafficStats;
 import sniffer.utils.Logger;
 
 import java.util.List;
@@ -22,11 +25,17 @@ public class SnifferEngine {
     private int totalPackets;
     private int totalBytes;
     private DefaultPacketParser parser;
+    private DefaultPacketFilter filter;
+    private TrafficStats stats;
+    private BasicSecurityAnalyzer analyzer;
 
     public SnifferEngine(String filterExpression, int packetLimit) {
         this.filterExpression = filterExpression;
         this.packetLimit = packetLimit;
         this.parser = new DefaultPacketParser();
+        this.filter = new DefaultPacketFilter();
+        this.stats = new TrafficStats();
+        this.analyzer = new BasicSecurityAnalyzer();
     }
 
     /**
