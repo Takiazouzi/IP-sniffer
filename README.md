@@ -71,7 +71,3 @@ mvn exec:java -Dexec.mainClass="sniffer.Main"
 
 - Pcap4J
 - SLF4J
-
-## License
-
-Educational project only.
